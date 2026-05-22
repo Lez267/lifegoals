@@ -1,0 +1,16 @@
+<div class="container">
+  <div class="add-section">
+    <h2>Add a life goal</h2>
+    <p>Use this form below to add a new life goal</p>
+    <input type="text" [(ngModel)]="myMeta.meta" placeholder="Enter your goal..." />
+    <button (click)="addMeta()">add an item</button>
+  </div>
+
+  <div class="list-section">
+    <h2>Your goal list ({{ metas.length }})</h2>
+    <div class="goal-item" *ngFor="let meta of metas">
+      <button class="delete-btn" (click)="deleteMeta(meta.id)">delete</button>
+      <p>{{ meta.meta }}</p>
+    </div>
+  </div>
+</div>
