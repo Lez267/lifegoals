@@ -1,0 +1,57 @@
+name: Angular Docker Deploy
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  angular_deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: build
+        run: |
+          npm run build
+          mkdir -p docs
+          mv dist/lifegoals/browser/* docs/
+      - name: list
+        run: |
+          ls -la docs
+      - name: docker login
+        env:
+          DOCKER_USER: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+        run: |
+          docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
+      - name: Download and run the Docker base image
+        run: docker run -d --name http_base httpd
+
+      - name: copy model to the Docker image
+        run: docker cp docs/. http_base:/usr/local/apache2/htdocs
+
+      - name: Save container as image (docker commit)
+        env:
+          DOCKER_USER: ${{ secrets.DOCKER_USERNAME }}
+        run: |
+          docker commit http_base $DOCKER_USER/lifegoals:latest
+      - name: Push image to Docker Hub
+        env:
+          DOCKER_USER: ${{ secrets.DOCKER_USERNAME }}
+        run: |
+          docker push $DOCKER_USER/lifegoals:latest
+      - name: Trigger Render Deploy
+        run: |
+          curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK }}
